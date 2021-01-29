@@ -95,8 +95,9 @@ int main(int argc, char **argv) {
         util::WallTimer rwtimer;
 
         tex::DataCosts data_costs(num_faces, texture_views.size());
+        std::vector<std::map<uint32_t, math::Vec4f> > faces_colors(num_faces);
         if (conf.data_cost_file.empty()) {
-            tex::calculate_data_costs(mesh, &texture_views, conf.settings, &data_costs);
+            tex::calculate_data_costs(mesh, &texture_views, conf.settings, &data_costs, faces_colors);
 
             if (conf.write_intermediate_results) {
                 std::cout << "\tWriting data cost file... " << std::flush;
@@ -117,7 +118,7 @@ int main(int argc, char **argv) {
         timer.measure("Calculating data costs");
 
         try {
-            tex::view_selection(data_costs, &graph, conf.settings);
+            tex::view_selection_table(data_costs, &graph, faces_colors, conf.settings);
         } catch (std::runtime_error& e) {
             std::cerr << "\tOptimization failed: " << e.what() << std::endl;
             std::exit(EXIT_FAILURE);

@@ -109,7 +109,7 @@ from_images_and_camera_files(std::string const & path,
     }
 
     ProgressCounter view_counter("\tLoading", files.size() / 2);
-    #pragma omp parallel for
+#pragma omp parallel for
     for (std::size_t i = 0; i < files.size(); i += 2) {
         view_counter.progress<SIMPLE>();
         const std::string cam_file = files[i];

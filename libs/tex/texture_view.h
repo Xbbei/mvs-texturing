@@ -27,6 +27,7 @@ struct FaceProjectionInfo {
     std::uint16_t view_id;
     float quality;
     math::Vec3f mean_color;
+    float std;
 
     bool operator<(FaceProjectionInfo const & other) const {
         return view_id < other.view_id;

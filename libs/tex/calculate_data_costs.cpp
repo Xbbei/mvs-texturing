@@ -8,6 +8,8 @@
  */
 
 #include <numeric>
+#include <vector>
+#include <map>
 
 #include <mve/image_color.h>
 #include <acc/bvh_tree.h>
@@ -214,7 +216,7 @@ calculate_face_projection_infos(mve::TriangleMesh::ConstPtr mesh,
                     if (!visible) continue;
                 }
 
-                FaceProjectionInfo info = {j, 0.0f, math::Vec3f(0.0f, 0.0f, 0.0f)};
+                FaceProjectionInfo info = {j, 0.0f, math::Vec3f(0.0f, 0.0f, 0.0f), 0.0};
 
                 /* Calculate quality. */
                 texture_view->get_face_info(v1, v2, v3, &info, settings);
@@ -223,6 +225,8 @@ calculate_face_projection_infos(mve::TriangleMesh::ConstPtr mesh,
 
                 /* Change color space. */
                 mve::image::color_rgb_to_ycbcr(*(info.mean_color));
+                float std_quality = std::max(0.0, 2.0 - info.std * 10.0);
+                info.quality += 15.0 * std_quality;
 
                 std::pair<std::size_t, FaceProjectionInfo> pair(face_id, info);
                 projected_face_view_infos.push_back(pair);
@@ -253,7 +257,8 @@ calculate_face_projection_infos(mve::TriangleMesh::ConstPtr mesh,
 void
 postprocess_face_infos(Settings const & settings,
         FaceProjectionInfos * face_projection_infos,
-        DataCosts * data_costs) {
+        DataCosts * data_costs,
+        std::vector<std::map<uint32_t, math::Vec4f> >& face_colors) {
 
     ProgressCounter face_counter("\tPostprocessing face infos",
         face_projection_infos->size());
@@ -295,6 +300,8 @@ postprocess_face_infos(Settings const & settings,
             float normalized_quality = std::min(1.0f, info.quality / percentile);
             float data_cost = (1.0f - normalized_quality);
             data_costs->set_value(i, info.view_id, data_cost);
+
+            face_colors[i][info.view_id] = math::Vec4f(info.mean_color[0], info.mean_color[1], info.mean_color[2], info.std);
         }
 
         /* Ensure that all memory is freeed. */
@@ -307,7 +314,8 @@ postprocess_face_infos(Settings const & settings,
 
 void
 calculate_data_costs(mve::TriangleMesh::ConstPtr mesh, std::vector<TextureView> * texture_views,
-    Settings const & settings, DataCosts * data_costs) {
+    Settings const & settings, DataCosts * data_costs,
+    std::vector<std::map<uint32_t, math::Vec4f> >& face_colors) {
 
     std::size_t const num_faces = mesh->get_faces().size() / 3;
     std::size_t const num_views = texture_views->size();
@@ -319,7 +327,7 @@ calculate_data_costs(mve::TriangleMesh::ConstPtr mesh, std::vector<TextureView> 
 
     FaceProjectionInfos face_projection_infos(num_faces);
     calculate_face_projection_infos(mesh, texture_views, settings, &face_projection_infos);
-    postprocess_face_infos(settings, &face_projection_infos, data_costs);
+    postprocess_face_infos(settings, &face_projection_infos, data_costs, face_colors);
 }
 
 TEX_NAMESPACE_END

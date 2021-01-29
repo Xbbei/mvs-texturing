@@ -154,6 +154,7 @@ TextureView::get_face_info(math::Vec3f const & v1, math::Vec3f const & v2,
 
     std::size_t num_samples = 0;
     math::Vec3d colors(0.0);
+    float std = 0.0;
     double gmi = 0.0;
 
     bool sampling_necessary = settings.data_term != DATA_TERM_AREA || settings.outlier_removal != OUTLIER_REMOVAL_NONE;
@@ -217,6 +218,48 @@ TextureView::get_face_info(math::Vec3f const & v1, math::Vec3f const & v2,
                 ++num_samples;
             }
         }
+        if (num_samples > 0) {
+            math::Vec3d mean_colors = colors / num_samples;
+            for (int y = std::floor(aabb.min_y); y < std::ceil(aabb.max_y); ++y) {
+                float min_x = aabb.min_x - 0.5f;
+                float max_x = aabb.max_x + 0.5f;
+
+                if (fast_sampling_possible) {
+                    float const cy = static_cast<float>(y) + 0.5f;
+
+                    min_x = (cy - b1) / m1;
+                    if (cy <= p2[1]) max_x = (cy - b2) / m2;
+                    else max_x = (cy - b3) / m3;
+
+                    if (min_x >= max_x) std::swap(min_x, max_x);
+
+                    if (min_x < aabb.min_x || min_x > aabb.max_x) continue;
+                    if (max_x < aabb.min_x || max_x > aabb.max_x) continue;
+                }
+
+                for (int x = std::floor(min_x + 0.5f); x < std::ceil(max_x - 0.5f); ++x) {
+                    math::Vec3d color;
+
+                    const float cx = static_cast<float>(x) + 0.5f;
+                    const float cy = static_cast<float>(y) + 0.5f;
+                    if (!fast_sampling_possible && !tri.inside(cx, cy)) continue;
+
+                    if (settings.outlier_removal != OUTLIER_REMOVAL_NONE) {
+                        for (std::size_t i = 0; i < 3; i++){
+                            color[i] = static_cast<double>(image->at(x, y, i)) / 255.0;
+                        }
+                        std += ((color[0] - mean_colors[0]) * (color[0] - mean_colors[0]) +
+                            (color[1] - mean_colors[1]) * (color[1] - mean_colors[1]) + 
+                            (color[2] - mean_colors[2]) * (color[2] - mean_colors[2])) / 3.0;
+                    }
+
+                    if (settings.data_term == DATA_TERM_GMI) {
+                        gmi += static_cast<double>(gradient_magnitude->at(x, y, 0)) / 255.0;
+                    }
+                    ++num_samples;
+                }
+            }
+        }
     }
 
     if (settings.data_term == DATA_TERM_GMI) {
@@ -233,6 +276,7 @@ TextureView::get_face_info(math::Vec3f const & v1, math::Vec3f const & v2,
     if (settings.outlier_removal != OUTLIER_REMOVAL_NONE) {
         if (num_samples > 0) {
             face_info->mean_color = colors / num_samples;
+            face_info->std = std::sqrt(std) / num_samples;
         } else {
             math::Vec3d c1, c2, c3;
             for (std::size_t i = 0; i < 3; ++i) {
@@ -241,6 +285,7 @@ TextureView::get_face_info(math::Vec3f const & v1, math::Vec3f const & v2,
                  c3[i] = static_cast<double>(image->linear_at(p3[0], p3[1], i)) / 255.0;
             }
             face_info->mean_color = ((c1 + c2 + c3) / 3.0);
+            face_info->std = 0.0;
         }
     }
 

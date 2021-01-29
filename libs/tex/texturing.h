@@ -11,6 +11,7 @@
 #define TEX_TEXTURING_HEADER
 
 #include <vector>
+#include <map>
 
 #include "mve/mesh.h"
 #include "mve/mesh_info.h"
@@ -66,7 +67,8 @@ build_adjacency_graph(mve::TriangleMesh::ConstPtr mesh,
 void
 calculate_data_costs(mve::TriangleMesh::ConstPtr mesh,
     TextureViews * texture_views, Settings const & settings,
-    DataCosts * data_costs);
+    DataCosts * data_costs,
+    std::vector<std::map<uint32_t, math::Vec4f> >& face_colors);
 
 void
 postprocess_face_infos(Settings const & settings,
@@ -77,7 +79,10 @@ postprocess_face_infos(Settings const & settings,
  * Runs the view selection procedure and saves the labeling in the graph
  */
 void
-view_selection(DataCosts const & data_costs, UniGraph * graph, Settings const & settings);
+view_selection(DataCosts const & data_costs, UniGraph * graph, const std::vector<std::map<uint32_t, math::Vec4f> >& faces_colors, Settings const & settings);
+
+void
+view_selection_table(DataCosts const & data_costs, UniGraph * graph, const std::vector<std::map<uint32_t, math::Vec4f> >& faces_colors, Settings const & settings);
 
 /**
   * Generates texture patches using the graph to determine adjacent faces with the same label.
