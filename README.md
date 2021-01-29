@@ -1,3 +1,10 @@
+Change Things:
+--------------------------------------------------------------------------------
+
+0. Origin github: https://github.com/nmoehrle/mvs-texturing
+1. Change the as possible as less seams to letting the seams puts in the texturless area.
+2. Add the std of patch to data costs.
+
 MVS-Texturing
 --------------------------------------------------------------------------------
 
