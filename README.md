@@ -1,4 +1,4 @@
-Change Things:
+Change Logs:
 --------------------------------------------------------------------------------
 
 0. Origin github: https://github.com/nmoehrle/mvs-texturing
